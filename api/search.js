@@ -1,5 +1,5 @@
-// api/search.js — ExaOSINT v3.2 (Abril 2026)
-// Melhorias: query mais rica, texto ampliado para 4000 caracteres
+// api/search.js — ExaOSINT v3.3 (Abril 2026)
+// Filtro mais equilibrado: aceita resultados com score alto ou combinações fortes
 
 const normalizeText = (value = '') =>
   value
@@ -133,13 +133,16 @@ const scoreResult = (result, filters = {}) => {
   const hasStrongSignal = cpfMatch || motherMatch || (dateMatch && nomeMatchStrong);
 
   // Critério principal (rígido mas realista)
-  const accepted = Boolean(
+  let accepted = Boolean(
     cpfMatch ||                                      // CPF sempre aceita
     motherMatch ||                                   // Nome da mãe é muito discriminante
     (nomeMatchStrong && dateMatch) ||                // Nome forte + data
     (nomeMatchStrong && hasStrongSignal) ||          // Nome + qualquer sinal forte
     (exactNamePhrase && (locationMatch || dateMatch)) // Frase exata + local ou data
   );
+
+  // Novidade: se o score for muito alto (>=12), aceita independentemente das regras acima
+  if (score >= 12) accepted = true;
 
   const matches = {
     nome: nomeResult.matched,
@@ -174,7 +177,7 @@ export default async function handler(req, res) {
       type: 'neural',
       contents: {
         highlights: { maxCharacters: 900, numSentences: 3, highlightsPerUrl: 2 },
-        text: { maxCharacters: 4000 }   // Aumentado para capturar mais contexto
+        text: { maxCharacters: 4000 }
       }
     };
 
@@ -202,12 +205,12 @@ export default async function handler(req, res) {
 
     const accepted = scored.filter(r => r.accepted).sort((a, b) => b.matchScore - a.matchScore);
 
-    // Fallback mais útil: resultados com score >= 7 (ajustável)
+    // Fallback mais permissivo: score >= 6 (antes era 7)
     const finalResults = accepted.length > 0
       ? accepted
       : scored
-          .filter(r => r.matchScore >= 7)
-          .slice(0, 4)
+          .filter(r => r.matchScore >= 6)
+          .slice(0, 6)
           .map(r => ({ ...r, lowConfidence: true }));
 
     return res.status(200).json({
