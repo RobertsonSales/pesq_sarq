@@ -1,5 +1,5 @@
-// api/search.js — ExaOSINT v3.1 (Equilibrado - Março 2026)
-// Mantém proteção contra homônimos, mas permite resultados reais quando os dados existem na web
+// api/search.js — ExaOSINT v3.2 (Abril 2026)
+// Melhorias: query mais rica, texto ampliado para 4000 caracteres
 
 const normalizeText = (value = '') =>
   value
@@ -127,7 +127,7 @@ const scoreResult = (result, filters = {}) => {
   if (cpfMatch) score += 10;
   if (dateMatch) score += 5;
   if (motherMatch) score += 6;
-  if (locationMatch) score += 3;        // aumentado um pouco
+  if (locationMatch) score += 3;
   if (exactNamePhrase) score += 4;
 
   const hasStrongSignal = cpfMatch || motherMatch || (dateMatch && nomeMatchStrong);
@@ -174,7 +174,7 @@ export default async function handler(req, res) {
       type: 'neural',
       contents: {
         highlights: { maxCharacters: 900, numSentences: 3, highlightsPerUrl: 2 },
-        text: { maxCharacters: 2000 }
+        text: { maxCharacters: 4000 }   // Aumentado para capturar mais contexto
       }
     };
 
@@ -202,11 +202,11 @@ export default async function handler(req, res) {
 
     const accepted = scored.filter(r => r.accepted).sort((a, b) => b.matchScore - a.matchScore);
 
-    // Fallback mais útil para casos como Frederico Sales Guimarães
+    // Fallback mais útil: resultados com score >= 7 (ajustável)
     const finalResults = accepted.length > 0
       ? accepted
       : scored
-          .filter(r => r.matchScore >= 7)   // Antes era 9 — agora mais flexível
+          .filter(r => r.matchScore >= 7)
           .slice(0, 4)
           .map(r => ({ ...r, lowConfidence: true }));
 
