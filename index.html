@@ -310,9 +310,12 @@
         }
         
         // ==================== CONSTRUÇÃO DA QUERY OTIMIZADA ====================
+        // Melhoria: inclui CPF e data de nascimento na string de busca
         function buildQuery(dados, contexto) {
             const partes = [
-                `"${dados.nome}"`,
+                `"${dados.nome}"`,               // nome exato entre aspas
+                dados.cpf,                       // CPF formatado
+                dados.dataNasc,                  // data de nascimento
                 contexto,
                 dados.localizacao || '',
                 'Brasil'
