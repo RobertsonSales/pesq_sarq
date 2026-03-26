@@ -83,6 +83,7 @@
         .chip-data    { background: #3b1d6e22; color: #a78bfa; border: 1px solid #a78bfa44; }
         .chip-mae     { background: #7c1d1d22; color: #f87171; border: 1px solid #f8717144; }
         .chip-local   { background: #78350f22; color: #fb923c; border: 1px solid #fb923c44; }
+        .chip-exata   { background: #16653422; color: #4ade80; border: 1px solid #4ade8044; }
         .chip-low     { background: #78350f44; color: #fbbf24; border: 1px solid #fbbf2444; }
     </style>
 </head>
@@ -94,7 +95,7 @@
                 <div class="w-9 h-9 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-inner">E</div>
                 <div>
                     <h1 class="font-semibold text-2xl tracking-tighter" style="font-family: 'Space Grotesk', sans-serif;">ExaOSINT</h1>
-                    <p class="text-xs text-zinc-500 -mt-1">Hub de Inteligência OSINT com IA</p>
+                    <p class="text-xs text-zinc-500 -mt-1">Hub de Inteligência OSINT com IA • Filtro Rigoroso v3</p>
                 </div>
             </div>
             
@@ -120,7 +121,7 @@
             <div class="flex items-center gap-x-4">
                 <div class="text-xs px-3 py-1.5 bg-zinc-800 text-zinc-400 rounded-3xl flex items-center gap-x-2">
                     <i class="fa-solid fa-shield-alt"></i>
-                    <span id="api-status" class="font-mono">🔒 API protegida</span>
+                    <span id="api-status" class="font-mono">🔒 Filtro Rigoroso Ativo</span>
                 </div>
             </div>
         </div>
@@ -134,8 +135,8 @@
                     Crie um perfil completo de investigação
                 </h2>
                 <p class="text-zinc-400 mt-3 max-w-lg">
-                    Preencha os dados abaixo. Os 7 agentes de IA da Exa.AI irão consultar a web pública 
-                    e montar um dossiê detalhado do indivíduo, com maior precisão usando nome entre aspas e filtros geográficos.
+                    Preencha os dados abaixo. O sistema lançará 7 agentes de IA que consultam a web pública 
+                    e aplicam <strong>filtro rigoroso</strong> (nome + pelo menos um identificador forte).
                 </p>
             </div>
 
@@ -157,14 +158,14 @@
                                 <input type="text" id="nomeMae" autocomplete="off" spellcheck="false" class="w-full bg-zinc-800 border border-zinc-700 focus:border-cyan-400 rounded-2xl px-5 py-4 text-lg outline-none" placeholder="Ex: Maria Oliveira Santos" required>
                             </div>
                             <div><label class="block text-sm font-medium text-zinc-400 mb-2">Cidade / Estado (opcional)</label>
-                                <input type="text" id="localizacao" autocomplete="off" spellcheck="false" class="w-full bg-zinc-800 border border-zinc-700 focus:border-cyan-400 rounded-2xl px-5 py-4 text-lg outline-none" placeholder="Ex: São Paulo, SP">
+                                <input type="text" id="localizacao" autocomplete="off" spellcheck="false" class="w-full bg-zinc-800 border border-zinc-700 focus:border-cyan-400 rounded-2xl px-5 py-4 text-lg outline-none" placeholder="Ex: Rio de Janeiro, RJ">
                                 <p class="text-xs text-zinc-500 mt-1">Ajuda a filtrar resultados por região.</p>
                             </div>
                             <div class="pt-4">
                                 <button type="submit" id="search-btn" class="w-full bg-gradient-to-r from-cyan-400 to-blue-500 hover:brightness-110 text-white font-semibold text-xl py-6 rounded-3xl flex items-center justify-center gap-x-3 shadow-lg shadow-cyan-500/30">
                                     <i class="fa-solid fa-rocket"></i> LANÇAR 7 AGENTES DE BUSCA
                                 </button>
-                                <p class="text-center text-xs text-zinc-500 mt-4">Consulta otimizada com aspas e filtros estritos • Backend seguro</p>
+                                <p class="text-center text-xs text-zinc-500 mt-4">Consulta otimizada • Filtro rigoroso contra homônimos • Backend seguro</p>
                             </div>
                         </div>
                     </form>
@@ -181,6 +182,9 @@
                         <div class="bg-zinc-900/70 border border-zinc-700 rounded-2xl p-4 flex gap-x-4"><div class="text-cyan-400 text-2xl">🚨</div><div><strong>Criminal</strong><br><span class="text-zinc-400 text-xs">Antecedentes e notícias públicas</span></div></div>
                         <div class="bg-zinc-900/70 border border-zinc-700 rounded-2xl p-4 flex gap-x-4"><div class="text-cyan-400 text-2xl">⚖️</div><div><strong>Jurídica</strong><br><span class="text-zinc-400 text-xs">Processos judiciais e TJ</span></div></div>
                         <div class="bg-zinc-900/70 border border-zinc-700 rounded-2xl p-4 flex gap-x-4 col-span-2"><div class="text-cyan-400 text-2xl">🌐</div><div><strong>Social</strong><br><span class="text-zinc-400 text-xs">Perfis em redes sociais e menções públicas</span></div></div>
+                    </div>
+                    <div class="text-xs text-amber-400 bg-amber-900/30 border border-amber-700 p-4 rounded-2xl">
+                        <strong>Nota:</strong> O filtro rigoroso exige que o nome completo (ou forte combinação) apareça junto com pelo menos um dos identificadores (CPF, data de nascimento ou nome da mãe).
                     </div>
                 </div>
             </div>
@@ -219,7 +223,7 @@
                 <i class="fa-solid fa-spinner loading-spinner text-white text-4xl"></i>
             </div>
             <p class="text-2xl font-medium">Lançando os 7 agentes de IA...</p>
-            <p class="text-zinc-400 mt-2">Consultando a web em tempo real via Exa.AI (backend)</p>
+            <p class="text-zinc-400 mt-2">Consultando a web com filtro rigoroso contra homônimos</p>
             <div class="w-full h-2 bg-zinc-800 rounded-full mt-8 mx-auto overflow-hidden">
                 <div id="progress-bar" class="h-2 w-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-300"></div>
             </div>
@@ -248,7 +252,7 @@
             <div class="flex justify-between items-start mb-10">
                 <div>
                     <h1 class="text-5xl font-bold text-cyan-600" style="font-family: 'Space Grotesk', sans-serif;">ExaOSINT</h1>
-                    <p class="text-2xl text-zinc-600">Relatório Consolidado de Investigação</p>
+                    <p class="text-2xl text-zinc-600">Relatório Consolidado de Investigação • Filtro Rigoroso</p>
                 </div>
                 <div class="text-right">
                     <p class="text-xs uppercase tracking-widest">Gerado em</p>
@@ -257,7 +261,7 @@
                 </div>
             </div>
             <div id="pdf-content" class="grid grid-cols-2 gap-8"></div>
-            <div class="text-center text-xs text-zinc-400 mt-16 border-t pt-8">Este relatório foi gerado automaticamente pelo frontend ExaOSINT • Powered by Exa.AI • Uso exclusivamente para fins de demonstração OSINT</div>
+            <div class="text-center text-xs text-zinc-400 mt-16 border-t pt-8">Este relatório foi gerado automaticamente pelo ExaOSINT • Powered by Exa.AI • Uso exclusivamente para fins de demonstração OSINT</div>
         </div>
     </div>
 
@@ -288,7 +292,7 @@
                     body: JSON.stringify({ query, filters }),
                 });
                 if (!response.ok) {
-                    const errorData = await response.json();
+                    const errorData = await response.json().catch(() => ({}));
                     throw new Error(errorData.error || `Erro HTTP ${response.status}`);
                 }
                 return await response.json();
@@ -306,66 +310,25 @@
         }
         
         // ==================== CONSTRUÇÃO DA QUERY OTIMIZADA ====================
-        // IMPORTANTE: CPF, dataNasc e nomeMae NÃO devem entrar na query da Exa.
-        // A busca neural da Exa funciona com linguagem natural — strings exatas como
-        // CPF e datas sabotam a relevância semântica. Esses dados são usados
-        // EXCLUSIVAMENTE como filtros no backend (search.js), não na query.
         function buildQuery(dados, contexto) {
             const partes = [
-                `"${dados.nome}"`,           // nome entre aspas aumenta precisão semântica
-                contexto,                    // contexto específico do agente
-                dados.localizacao || '',     // localização ajuda sem restringir demais
-                'Brasil'                     // ancora a busca ao contexto brasileiro
+                `"${dados.nome}"`,
+                contexto,
+                dados.localizacao || '',
+                'Brasil'
             ].filter(Boolean);
             return partes.join(' ');
         }
         
         // ==================== AGENTES ====================
-        // Cada agente usa um contexto especializado para direcionar a busca neural.
-        // Evitamos termos redundantes que confundam o modelo semântico da Exa.
         const AGENTS = [
-            {
-                id: 'civil',
-                name: 'Civil',
-                icon: '👤',
-                queryTemplate: (d) => buildQuery(d, 'registro civil certidão nascimento endereço residência família')
-            },
-            {
-                id: 'profissional',
-                name: 'Profissional',
-                icon: '💼',
-                queryTemplate: (d) => buildQuery(d, 'perfil profissional LinkedIn carreira emprego empresa cargo')
-            },
-            {
-                id: 'estudantil',
-                name: 'Estudantil',
-                icon: '🎓',
-                queryTemplate: (d) => buildQuery(d, 'histórico escolar universidade faculdade curso diploma formação acadêmica')
-            },
-            {
-                id: 'comercial',
-                name: 'Comercial',
-                icon: '🏪',
-                queryTemplate: (d) => buildQuery(d, 'CNPJ empresa sócio quadro societário sociedade empresarial negócio')
-            },
-            {
-                id: 'criminal',
-                name: 'Criminal',
-                icon: '🚨',
-                queryTemplate: (d) => buildQuery(d, 'antecedentes criminais preso notícia crime polícia delegacia')
-            },
-            {
-                id: 'juridica',
-                name: 'Jurídica',
-                icon: '⚖️',
-                queryTemplate: (d) => buildQuery(d, 'processo judicial ação cível TJ TJSP TJRJ TJMG réu autor advogado')
-            },
-            {
-                id: 'social',
-                name: 'Social',
-                icon: '🌐',
-                queryTemplate: (d) => buildQuery(d, 'perfil Instagram Facebook Twitter TikTok LinkedIn redes sociais menção')
-            }
+            { id: 'civil', name: 'Civil', icon: '👤', queryTemplate: (d) => buildQuery(d, 'registro civil certidão nascimento endereço residência família') },
+            { id: 'profissional', name: 'Profissional', icon: '💼', queryTemplate: (d) => buildQuery(d, 'perfil profissional LinkedIn carreira emprego empresa cargo') },
+            { id: 'estudantil', name: 'Estudantil', icon: '🎓', queryTemplate: (d) => buildQuery(d, 'histórico escolar universidade faculdade curso diploma formação acadêmica') },
+            { id: 'comercial', name: 'Comercial', icon: '🏪', queryTemplate: (d) => buildQuery(d, 'CNPJ empresa sócio quadro societário sociedade empresarial negócio') },
+            { id: 'criminal', name: 'Criminal', icon: '🚨', queryTemplate: (d) => buildQuery(d, 'antecedentes criminais preso notícia crime polícia delegacia') },
+            { id: 'juridica', name: 'Jurídica', icon: '⚖️', queryTemplate: (d) => buildQuery(d, 'processo judicial ação cível TJ TJSP TJRJ TJMG réu autor advogado') },
+            { id: 'social', name: 'Social', icon: '🌐', queryTemplate: (d) => buildQuery(d, 'perfil Instagram Facebook Twitter TikTok LinkedIn redes sociais menção') }
         ];
         
         let currentSearchData = null;
@@ -381,22 +344,23 @@
                 nomeMae: document.getElementById('nomeMae').value.trim(),
                 localizacao: document.getElementById('localizacao').value.trim()
             };
-            if(!formData.nome || !formData.cpf) { alert('Nome completo e CPF são obrigatórios'); return; }
+            if(!formData.nome || !formData.cpf || !formData.dataNasc || !formData.nomeMae) {
+                alert('Nome completo, CPF, Data de Nascimento e Nome da Mãe são obrigatórios');
+                return;
+            }
             currentSearchData = formData;
             resultsData = {};
             
-            const modal=document.getElementById('loading-modal');
-            const progressBar=document.getElementById('progress-bar');
-            const progressStatus=document.getElementById('progress-status');
+            const modal = document.getElementById('loading-modal');
+            const progressBar = document.getElementById('progress-bar');
+            const progressStatus = document.getElementById('progress-status');
             modal.classList.remove('hidden');
-            progressBar.style.width='0%';
-            progressStatus.innerText='0 / 7 agentes concluídos';
-            document.getElementById('search-btn').disabled=true;
+            progressBar.style.width = '0%';
+            progressStatus.innerText = '0 / 7 agentes concluídos';
+            document.getElementById('search-btn').disabled = true;
             
-            let completed=0;
+            let completed = 0;
             const promises = AGENTS.map(async (agent) => {
-                // A query contém apenas nome + contexto temático + localização.
-                // Os dados sensíveis (CPF, dataNasc, nomeMae) vão SOMENTE no campo filters.
                 const query = agent.queryTemplate(formData);
                 try {
                     const data = await callExaAPI(query, formData);
@@ -413,37 +377,42 @@
                     resultsData[agent.id] = { agent, results: [], error: err.message };
                 } finally {
                     completed++;
-                    progressBar.style.width=`${(completed/AGENTS.length)*100}%`;
-                    progressStatus.innerText=`${completed} / ${AGENTS.length} agentes concluídos`;
+                    progressBar.style.width = `${(completed/AGENTS.length)*100}%`;
+                    progressStatus.innerText = `${completed} / ${AGENTS.length} agentes concluídos`;
                 }
             });
             await Promise.all(promises);
             modal.classList.add('hidden');
-            document.getElementById('search-btn').disabled=false;
+            document.getElementById('search-btn').disabled = false;
             renderDashboard();
             showTab(1);
         }
         
         // ==================== CHIPS DE SINAL ====================
-        // Exibe visualmente quais identificadores foram encontrados no resultado.
         function buildSignalChips(matchedSignals, lowConfidence) {
             if(!matchedSignals) return '';
             const chips = [];
-            if(lowConfidence)           chips.push(`<span class="signal-chip chip-low">⚠ baixa conf.</span>`);
-            if(matchedSignals.cpf)      chips.push(`<span class="signal-chip chip-cpf">✓ CPF</span>`);
-            if(matchedSignals.nome)     chips.push(`<span class="signal-chip chip-nome">✓ Nome</span>`);
+            if(lowConfidence) chips.push(`<span class="signal-chip chip-low">⚠ baixa conf.</span>`);
+            if(matchedSignals.exactName) chips.push(`<span class="signal-chip chip-exata">✓ Frase Exata</span>`);
+            if(matchedSignals.cpf) chips.push(`<span class="signal-chip chip-cpf">✓ CPF</span>`);
+            if(matchedSignals.nome) chips.push(`<span class="signal-chip chip-nome">✓ Nome</span>`);
             if(matchedSignals.dataNasc) chips.push(`<span class="signal-chip chip-data">✓ Data</span>`);
-            if(matchedSignals.nomeMae)  chips.push(`<span class="signal-chip chip-mae">✓ Mãe</span>`);
+            if(matchedSignals.nomeMae) chips.push(`<span class="signal-chip chip-mae">✓ Mãe</span>`);
             if(matchedSignals.localizacao) chips.push(`<span class="signal-chip chip-local">✓ Local</span>`);
             return chips.join(' ');
         }
 
         // ==================== RENDERIZAÇÃO DO DASHBOARD ====================
         function renderDashboard() {
-            const grid=document.getElementById('agents-grid');
-            grid.innerHTML='';
-            document.getElementById('perfil-nome').innerHTML=`Perfil: <span class="text-cyan-400">${currentSearchData.nome}</span>`;
-            document.getElementById('perfil-info').innerHTML=`CPF: <span class="font-mono">${currentSearchData.cpf}</span> • Nasc: ${currentSearchData.dataNasc} • Mãe: ${currentSearchData.nomeMae}${currentSearchData.localizacao ? ' • Local: '+currentSearchData.localizacao : ''}`;
+            const grid = document.getElementById('agents-grid');
+            grid.innerHTML = '';
+            document.getElementById('perfil-nome').innerHTML = `Perfil: <span class="text-cyan-400">${currentSearchData.nome}</span>`;
+            document.getElementById('perfil-info').innerHTML = `
+                CPF: <span class="font-mono">${currentSearchData.cpf}</span> • 
+                Nasc: ${currentSearchData.dataNasc} • 
+                Mãe: ${currentSearchData.nomeMae}
+                ${currentSearchData.localizacao ? ' • Local: ' + currentSearchData.localizacao : ''}
+            `;
 
             AGENTS.forEach(agent => {
                 const data = resultsData[agent.id] || { results: [], agent };
@@ -452,11 +421,11 @@
 
                 let subCaption = `Agente IA • ${data.results.length} resultado${data.results.length !== 1 ? 's' : ''}`;
                 if(typeof data.filteredOut === 'number' && data.filteredOut > 0)
-                    subCaption += ` • ${data.filteredOut} descartado${data.filteredOut !== 1 ? 's' : ''} por divergência`;
+                    subCaption += ` • <span class="text-amber-400">${data.filteredOut} descartado${data.filteredOut !== 1 ? 's' : ''} (filtro rigoroso)</span>`;
                 if(data.usedFallback && fallbackCount > 0)
                     subCaption += ` • ${fallbackCount} com baixa confiança`;
 
-                let html=`
+                let html = `
                 <div class="dashboard-card bg-zinc-900 border border-zinc-700 rounded-3xl overflow-hidden">
                     <div class="px-6 py-5 border-b border-zinc-700 flex items-center gap-x-4">
                         <div class="text-4xl">${agent.icon}</div>
@@ -473,7 +442,6 @@
                     html += `<p class="text-red-400 text-center py-6">⚠️ Erro: ${data.error}</p>`;
                 } else if(data.results && data.results.length) {
                     data.results.forEach(r => {
-                        // Destaque: pega o primeiro highlight como string
                         let highlight = 'Sem destaque disponível.';
                         if(Array.isArray(r.highlights) && r.highlights.length > 0) {
                             const h = r.highlights[0];
@@ -506,9 +474,9 @@
         // ==================== PDF ====================
         function buildReportContent() {
             if(!currentSearchData) return '<p class="text-red-500">Nenhuma busca realizada.</p>';
-            const now=new Date();
-            document.getElementById('pdf-date').innerHTML=`${now.toLocaleDateString('pt-BR')} às ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-            document.getElementById('pdf-perfil-header').innerHTML=`
+            const now = new Date();
+            document.getElementById('pdf-date').innerHTML = `${now.toLocaleDateString('pt-BR')} às ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+            document.getElementById('pdf-perfil-header').innerHTML = `
                 <div class="bg-zinc-100 px-6 py-4 rounded-3xl">
                     <div class="text-xl font-semibold">${currentSearchData.nome}</div>
                     <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm mt-3">
@@ -518,24 +486,24 @@
                         ${currentSearchData.localizacao ? `<div>Localização: ${currentSearchData.localizacao}</div>` : ''}
                     </div>
                 </div>`;
-            const contentArea=document.getElementById('pdf-content');
-            contentArea.innerHTML='';
-            AGENTS.forEach(agent=>{
-                const data=resultsData[agent.id]||{results:[]};
-                let section=`<div class="break-inside-avoid mb-8"><div class="flex items-center gap-x-3 mb-4"><span class="text-4xl">${agent.icon}</span><div class="text-2xl font-semibold">${agent.name}</div></div>`;
+            const contentArea = document.getElementById('pdf-content');
+            contentArea.innerHTML = '';
+            AGENTS.forEach(agent => {
+                const data = resultsData[agent.id] || {results:[]};
+                let section = `<div class="break-inside-avoid mb-8"><div class="flex items-center gap-x-3 mb-4"><span class="text-4xl">${agent.icon}</span><div class="text-2xl font-semibold">${agent.name}</div></div>`;
                 if(data.results && data.results.length) {
-                    data.results.forEach(r=>{
+                    data.results.forEach(r => {
                         let hl = '';
                         if(Array.isArray(r.highlights) && r.highlights.length > 0) {
                             const h = r.highlights[0];
                             hl = (typeof h === 'string' ? h : (h.text || '')).substring(0, 220) + '…';
                         }
                         const lowWarn = r.lowConfidence ? '<span style="color:#f59e0b;font-size:10px;"> ⚠ baixa confiança</span>' : '';
-                        section+=`<div class="mb-6 border-l-4 border-cyan-400 pl-4"><div class="font-medium text-lg">${r.title || r.url}${lowWarn}</div><a href="${r.url}" target="_blank" class="text-xs text-blue-600 break-all">${r.url}</a>${hl?`<p class="text-zinc-600 text-sm mt-2">${hl}</p>`:''}</div>`;
+                        section += `<div class="mb-6 border-l-4 border-cyan-400 pl-4"><div class="font-medium text-lg">${r.title || r.url}${lowWarn}</div><a href="${r.url}" target="_blank" class="text-xs text-blue-600 break-all">${r.url}</a>${hl?`<p class="text-zinc-600 text-sm mt-2">${hl}</p>`:''}</div>`;
                     });
-                } else section+=`<p class="text-zinc-400 italic">Nenhum dado encontrado nesta categoria.</p>`;
-                section+=`</div>`;
-                contentArea.innerHTML+=section;
+                } else section += `<p class="text-zinc-400 italic">Nenhum dado encontrado nesta categoria.</p>`;
+                section += `</div>`;
+                contentArea.innerHTML += section;
             });
             return contentArea.innerHTML;
         }
@@ -543,9 +511,9 @@
         function previewPDF() {
             if(!currentSearchData) { alert('Faça uma busca primeiro!'); return; }
             buildReportContent();
-            const previewDiv=document.getElementById('pdf-preview-content');
-            const reportDiv=document.getElementById('pdf-report');
-            previewDiv.innerHTML=reportDiv.innerHTML;
+            const previewDiv = document.getElementById('pdf-preview-content');
+            const reportDiv = document.getElementById('pdf-report');
+            previewDiv.innerHTML = reportDiv.innerHTML;
             document.getElementById('pdf-preview-modal').classList.remove('hidden');
         }
         
@@ -561,13 +529,19 @@
         function exportToPDF() {
             if(!currentSearchData) { alert('Faça uma busca primeiro!'); return; }
             buildReportContent();
-            const opt={ margin:[15,15,15,15], filename:`ExaOSINT_${currentSearchData.nome.replace(/ /g,'_')}.pdf`, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2,useCORS:true}, jsPDF:{unit:'mm',format:[297,210],orientation:'landscape'} };
+            const opt = {
+                margin: [15,15,15,15], 
+                filename: `ExaOSINT_${currentSearchData.nome.replace(/ /g,'_')}.pdf`, 
+                image: {type:'jpeg',quality:0.98}, 
+                html2canvas: {scale:2, useCORS:true}, 
+                jsPDF: {unit:'mm',format:[297,210],orientation:'landscape'}
+            };
             html2pdf().set(opt).from(document.getElementById('pdf-report')).save();
         }
         
         // ==================== NAVEGAÇÃO ====================
         function showTab(tabIndex) {
-            document.querySelectorAll('.tab-link').forEach(el=>el.classList.remove('active','border-cyan-400'));
+            document.querySelectorAll('.tab-link').forEach(el => el.classList.remove('active','border-cyan-400'));
             document.getElementById('tab-'+tabIndex).classList.add('active','border-cyan-400');
             document.getElementById('tab-content-0').classList.add('hidden');
             document.getElementById('tab-content-1').classList.add('hidden');
@@ -576,22 +550,22 @@
 
         // ==================== UTILITÁRIOS ====================
         function clearFormFields() {
-            ['nome','cpf','dataNasc','nomeMae','localizacao'].forEach(id=>{
-                const f=document.getElementById(id);
-                if(f) f.value='';
+            ['nome','cpf','dataNasc','nomeMae','localizacao'].forEach(id => {
+                const f = document.getElementById(id);
+                if(f) f.value = '';
             });
         }
 
-        function resetApplicationState(options={}) {
-            const { preserveFormData=false } = options;
-            currentSearchData=null;
-            resultsData={};
+        function resetApplicationState(options = {}) {
+            const { preserveFormData = false } = options;
+            currentSearchData = null;
+            resultsData = {};
             if(!preserveFormData) {
-                const form=document.getElementById('search-form');
+                const form = document.getElementById('search-form');
                 if(form) form.reset();
                 clearFormFields();
             }
-            const els={
+            const els = {
                 grid: document.getElementById('agents-grid'),
                 perfilNome: document.getElementById('perfil-nome'),
                 perfilInfo: document.getElementById('perfil-info'),
@@ -602,25 +576,25 @@
                 previewContent: document.getElementById('pdf-preview-content'),
                 searchBtn: document.getElementById('search-btn'),
             };
-            if(els.grid) els.grid.innerHTML='';
-            if(els.perfilNome) els.perfilNome.textContent='Perfil de Investigação';
-            if(els.perfilInfo) els.perfilInfo.innerHTML='';
+            if(els.grid) els.grid.innerHTML = '';
+            if(els.perfilNome) els.perfilNome.textContent = 'Perfil de Investigação';
+            if(els.perfilInfo) els.perfilInfo.innerHTML = '';
             if(els.modal) els.modal.classList.add('hidden');
             if(els.previewModal) els.previewModal.classList.add('hidden');
-            if(els.previewContent) els.previewContent.innerHTML='';
-            if(els.progressBar) els.progressBar.style.width='0%';
-            if(els.progressStatus) els.progressStatus.innerText='0 / 7 agentes concluídos';
-            if(els.searchBtn) els.searchBtn.disabled=false;
+            if(els.previewContent) els.previewContent.innerHTML = '';
+            if(els.progressBar) els.progressBar.style.width = '0%';
+            if(els.progressStatus) els.progressStatus.innerText = '0 / 7 agentes concluídos';
+            if(els.searchBtn) els.searchBtn.disabled = false;
             showTab(0);
         }
         
         function retrySearch() {
             if(currentSearchData) {
-                document.getElementById('nome').value=currentSearchData.nome;
-                document.getElementById('cpf').value=currentSearchData.cpf;
-                document.getElementById('dataNasc').value=currentSearchData.dataNasc;
-                document.getElementById('nomeMae').value=currentSearchData.nomeMae;
-                document.getElementById('localizacao').value=currentSearchData.localizacao||'';
+                document.getElementById('nome').value = currentSearchData.nome;
+                document.getElementById('cpf').value = currentSearchData.cpf;
+                document.getElementById('dataNasc').value = currentSearchData.dataNasc;
+                document.getElementById('nomeMae').value = currentSearchData.nomeMae;
+                document.getElementById('localizacao').value = currentSearchData.localizacao || '';
                 handleSearch(null);
             } else alert('Nenhuma busca anterior encontrada.');
         }
@@ -636,16 +610,16 @@
             } catch(error) {
                 console.warn('Não foi possível limpar o armazenamento local:', error);
             }
-            const cleanUrl=`${window.location.origin}${window.location.pathname}`;
+            const cleanUrl = `${window.location.origin}${window.location.pathname}`;
             window.location.replace(cleanUrl);
         }
         
-        window.onload=function() {
+        window.onload = function() {
             resetApplicationState();
-            console.log('%c✅ ExaOSINT v2 — queries otimizadas, scoring multicamada, fallback inteligente.','color:#00d4ff');
+            console.log('%c✅ ExaOSINT v3 — FILTRO RIGOROSO ATIVADO (nome + sinal forte obrigatório)', 'color:#00d4ff; font-weight:bold');
         };
 
-        window.addEventListener('pageshow',function() { resetApplicationState(); });
+        window.addEventListener('pageshow', function() { resetApplicationState(); });
     </script>
 </body>
 </html>
