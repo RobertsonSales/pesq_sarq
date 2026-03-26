@@ -40,7 +40,6 @@
             to { transform: rotate(360deg); }
         }
         
-        /* Estilos para o modal do PDF */
         .pdf-preview-modal {
             position: fixed;
             top: 0;
@@ -89,7 +88,7 @@
                 <div class="h-6 w-px bg-zinc-700 hidden sm:block"></div>
                 <div class="flex items-center gap-x-2 text-emerald-400 text-sm">
                     <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                    <span id="api-status-text">MODO DEMO</span>
+                    <span id="api-status-text">BACKEND ATIVO</span>
                 </div>
                 <button onclick="logoutDemo()" class="px-5 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-x-2">
                     <i class="fa-solid fa-right-from-bracket"></i> Sair
@@ -98,8 +97,8 @@
             
             <div class="flex items-center gap-x-4">
                 <div class="text-xs px-3 py-1.5 bg-zinc-800 text-zinc-400 rounded-3xl flex items-center gap-x-2">
-                    <i class="fa-solid fa-key"></i>
-                    <span id="api-status" class="font-mono">🔧 Demo</span>
+                    <i class="fa-solid fa-shield-alt"></i>
+                    <span id="api-status" class="font-mono">🔒 API protegida</span>
                 </div>
             </div>
         </div>
@@ -139,7 +138,7 @@
                                 <button type="submit" id="search-btn" class="w-full bg-gradient-to-r from-cyan-400 to-blue-500 hover:brightness-110 text-white font-semibold text-xl py-6 rounded-3xl flex items-center justify-center gap-x-3 shadow-lg shadow-cyan-500/30">
                                     <i class="fa-solid fa-rocket"></i> LANÇAR 7 AGENTES DE BUSCA
                                 </button>
-                                <p class="text-center text-xs text-zinc-500 mt-4">Isso pode levar até 25 segundos • API Exa.AI</p>
+                                <p class="text-center text-xs text-zinc-500 mt-4">Isso pode levar até 25 segundos • Backend seguro</p>
                             </div>
                         </div>
                     </form>
@@ -194,7 +193,7 @@
                 <i class="fa-solid fa-spinner loading-spinner text-white text-4xl"></i>
             </div>
             <p class="text-2xl font-medium">Lançando os 7 agentes de IA...</p>
-            <p class="text-zinc-400 mt-2">Consultando a web em tempo real via Exa.AI</p>
+            <p class="text-zinc-400 mt-2">Consultando a web em tempo real via Exa.AI (backend)</p>
             <div class="w-full h-2 bg-zinc-800 rounded-full mt-8 mx-auto overflow-hidden">
                 <div id="progress-bar" class="h-2 w-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-300"></div>
             </div>
@@ -237,31 +236,8 @@
     </div>
 
     <script>
-        // ==================== CONFIGURAÇÃO DA API ====================
-        // ⚠️ SUBSTITUA PELA SUA CHAVE REAL (para testes) 
-        const EXA_API_KEY = 'Sua chave aqui';   // <--- COLE SUA CHAVE AQUI
-
-        const isDemoMode = !EXA_API_KEY || EXA_API_KEY === 'SUA_CHAVE_API_AQUI' || EXA_API_KEY === '';
-        
-        // Atualiza interface conforme modo
-        function updateApiStatusUI() {
-            const statusSpan = document.getElementById('api-status');
-            const statusText = document.getElementById('api-status-text');
-            if (!isDemoMode) {
-                statusSpan.innerHTML = `✅ Chave configurada`;
-                statusSpan.classList.remove('text-amber-400');
-                statusSpan.classList.add('text-emerald-400');
-                statusText.innerHTML = 'API CONECTADA';
-                statusText.parentElement.classList.add('text-emerald-400');
-            } else {
-                statusSpan.innerHTML = `🔧 MODO DEMO`;
-                statusSpan.classList.remove('text-emerald-400');
-                statusSpan.classList.add('text-amber-400');
-                statusText.innerHTML = 'MODO DEMO';
-                statusText.parentElement.classList.add('text-amber-400');
-                console.warn('⚠️ MODO DEMO: Nenhuma chave de API Exa.AI configurada.');
-            }
-        }
+        // ==================== CONFIGURAÇÃO ====================
+        // Agora as chamadas são feitas para o back-end em /api/search
         
         // Máscaras
         function maskCPF(input) {
@@ -280,58 +256,36 @@
             input.value=v;
         }
         
-        // Chamada à API (com suporte a proxy CORS para testes)
+        // Chamada ao back-end (Serverless Function)
         async function callExaAPI(query) {
-            if (isDemoMode) {
-                await new Promise(r=>setTimeout(r,800+Math.random()*1000));
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query }),
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Erro HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Falha ao chamar o back-end:', error);
+                // Retorna um formato compatível para não quebrar a interface
                 return {
                     results: [
-                        { title: `[DEMO] Resultado para: ${query.substring(0,60)}...`, url: `https://exa.ai/demo-${Math.floor(Math.random()*999999)}`, score: (0.85+Math.random()*0.14).toFixed(2),
-                          highlights: [`Este é um resultado de demonstração. Para resultados reais, configure uma chave de API Exa.AI.`, `Informação fictícia baseada na consulta: ${query}.`] },
-                        { title: `[DEMO] Outra fonte simulada`, url: `https://exa.ai/demo-${Math.floor(Math.random()*999999)}`, score: (0.72+Math.random()*0.2).toFixed(2),
-                          highlights: [`Trecho semântico gerado para demonstração.`] }
-                    ]
+                        {
+                            title: `Erro na consulta: ${error.message}`,
+                            url: '#',
+                            score: '0',
+                            highlights: ['O servidor não conseguiu processar a solicitação. Verifique se a variável de ambiente EXA_API_KEY está configurada no Vercel.'],
+                        },
+                    ],
                 };
             }
-            
-            // Tenta fazer a requisição diretamente. Se falhar por CORS, oferece opção de proxy.
-            const directUrl = 'https://api.exa.ai/search';
-            const proxyUrl = 'https://cors-anywhere.herokuapp.com/' + directUrl;
-            
-            let response;
-            let usedProxy = false;
-            try {
-                response = await fetch(directUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-api-key': EXA_API_KEY },
-                    body: JSON.stringify({ query, numResults: 6, contents: { highlights: { maxCharacters: 900 } }, type: "neural" })
-                });
-            } catch (err) {
-                // Se falhar por CORS, tenta com proxy (apenas para teste)
-                if (err.message.includes('fetch') || err.message.includes('CORS')) {
-                    console.warn('Erro de CORS, tentando com proxy CORS-Anywhere (apenas testes)');
-                    try {
-                        response = await fetch(proxyUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-api-key': EXA_API_KEY },
-                            body: JSON.stringify({ query, numResults: 6, contents: { highlights: { maxCharacters: 900 } }, type: "neural" })
-                        });
-                        usedProxy = true;
-                    } catch (proxyErr) {
-                        throw new Error(`Falha na requisição: ${proxyErr.message}. Verifique CORS ou use um backend.`);
-                    }
-                } else {
-                    throw err;
-                }
-            }
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Erro ${response.status}: ${errorText.substring(0,150)}`);
-            }
-            const data = await response.json();
-            if (usedProxy) console.warn('⚠️ Requisição feita via proxy CORS-Anywhere. Não use em produção.');
-            return data;
         }
         
         // Agentes
@@ -507,9 +461,7 @@
         function logoutDemo() { if(confirm('Deseja finalizar esta sessão?')) window.location.reload(); }
         
         window.onload=function() {
-            updateApiStatusUI();
-            if(!isDemoMode) console.log('%c✅ ExaOSINT com API real ativada.','color:#00d4ff');
-            else console.warn('%c⚠️ MODO DEMO: Nenhuma chave configurada.','color:#ffaa00');
+            console.log('%c✅ ExaOSINT com backend seguro ativo.','color:#00d4ff');
         };
     </script>
 </body>
