@@ -19,6 +19,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Configuração otimizada: mais resultados, autoprompt ativado
     const response = await fetch('https://api.exa.ai/search', {
       method: 'POST',
       headers: {
@@ -27,9 +28,13 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         query: query,
-        numResults: 6,
-        contents: { highlights: { maxCharacters: 900 } },
-        type: 'neural',
+        numResults: 8,                   // mais resultados para filtrar
+        useAutoprompt: true,             // permite que a Exa refine a query automaticamente
+        contents: {
+          highlights: { maxCharacters: 900 },
+          text: true                     // opcional, para obter trechos mais completos
+        },
+        type: "neural"
       }),
     });
 
