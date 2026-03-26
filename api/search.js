@@ -1,26 +1,24 @@
 // api/search.js
 export default async function handler(req, res) {
-  // Permite apenas método POST
+  // Apenas método POST é aceito
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método não permitido. Use POST.' });
   }
 
-  // Extrai a query do corpo da requisição
   const { query } = req.body;
   if (!query || typeof query !== 'string') {
     return res.status(400).json({ error: 'Campo "query" é obrigatório.' });
   }
 
-  // Recupera a chave da API da variável de ambiente
+  // Recupera a chave da API da variável de ambiente configurada no Vercel
   const EXA_API_KEY = process.env.EXA_API_KEY;
 
   if (!EXA_API_KEY) {
-    console.error('Chave da API Exa não configurada.');
-    return res.status(500).json({ error: 'Configuração do servidor incompleta.' });
+    console.error('Chave da API Exa não configurada no ambiente.');
+    return res.status(500).json({ error: 'Configuração do servidor incompleta: chave da API não encontrada.' });
   }
 
   try {
-    // Faz a chamada para a API Exa
     const response = await fetch('https://api.exa.ai/search', {
       method: 'POST',
       headers: {
