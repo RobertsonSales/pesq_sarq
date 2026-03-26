@@ -30,6 +30,10 @@
         .result-item {
             border-left: 3px solid #00d4ff;
         }
+
+        .result-item.low-confidence {
+            border-left-color: #f59e0b;
+        }
         
         .loading-spinner {
             animation: spin 1.5s linear infinite;
@@ -62,6 +66,24 @@
             border-radius: 16px;
             box-shadow: 0 20px 30px rgba(0,0,0,0.3);
         }
+
+        /* Signal chips */
+        .signal-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 999px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+        .chip-nome    { background: #0e4f6e22; color: #38bdf8; border: 1px solid #38bdf844; }
+        .chip-cpf     { background: #14532d22; color: #4ade80; border: 1px solid #4ade8044; }
+        .chip-data    { background: #3b1d6e22; color: #a78bfa; border: 1px solid #a78bfa44; }
+        .chip-mae     { background: #7c1d1d22; color: #f87171; border: 1px solid #f8717144; }
+        .chip-local   { background: #78350f22; color: #fb923c; border: 1px solid #fb923c44; }
+        .chip-low     { background: #78350f44; color: #fbbf24; border: 1px solid #fbbf2444; }
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-100">
@@ -276,7 +298,7 @@
                     results: [{
                         title: `Erro na consulta: ${error.message}`,
                         url: '#',
-                        score: '0',
+                        matchScore: 0,
                         highlights: ['Verifique a configuração da API no Vercel.'],
                     }],
                 };
@@ -284,29 +306,66 @@
         }
         
         // ==================== CONSTRUÇÃO DA QUERY OTIMIZADA ====================
+        // IMPORTANTE: CPF, dataNasc e nomeMae NÃO devem entrar na query da Exa.
+        // A busca neural da Exa funciona com linguagem natural — strings exatas como
+        // CPF e datas sabotam a relevância semântica. Esses dados são usados
+        // EXCLUSIVAMENTE como filtros no backend (search.js), não na query.
         function buildQuery(dados, contexto) {
             const partes = [
-                `"${dados.nome}"`,
-                `"${dados.cpf}"`,
-                `"${dados.dataNasc}"`,
-                dados.nomeMae ? `"${dados.nomeMae}"` : '',
-                dados.localizacao ? `"${dados.localizacao}"` : '',
-                contexto,
-                'somente resultados do indivíduo exato',
-                'desconsiderar homônimos'
+                `"${dados.nome}"`,           // nome entre aspas aumenta precisão semântica
+                contexto,                    // contexto específico do agente
+                dados.localizacao || '',     // localização ajuda sem restringir demais
+                'Brasil'                     // ancora a busca ao contexto brasileiro
             ].filter(Boolean);
             return partes.join(' ');
         }
         
         // ==================== AGENTES ====================
+        // Cada agente usa um contexto especializado para direcionar a busca neural.
+        // Evitamos termos redundantes que confundam o modelo semântico da Exa.
         const AGENTS = [
-            { id:'civil', name:'Civil', icon:'👤', queryTemplate:(d)=> buildQuery(d, 'informações civis, endereço, registro de nascimento, certidão') },
-            { id:'profissional', name:'Profissional', icon:'💼', queryTemplate:(d)=> buildQuery(d, 'perfil profissional, LinkedIn, carreira, empresas, vínculo empregatício') },
-            { id:'estudantil', name:'Estudantil', icon:'🎓', queryTemplate:(d)=> buildQuery(d, 'histórico educacional, universidade, escola, faculdade, diplomas') },
-            { id:'comercial', name:'Comercial', icon:'🏪', queryTemplate:(d)=> buildQuery(d, 'empresas, CNPJ, sociedade empresarial, sócio') },
-            { id:'criminal', name:'Criminal', icon:'🚨', queryTemplate:(d)=> buildQuery(d, 'antecedentes criminais, notícias, processos criminais, polícia') },
-            { id:'juridica', name:'Jurídica', icon:'⚖️', queryTemplate:(d)=> buildQuery(d, 'processos judiciais, TJ, ações cíveis, justiça') },
-            { id:'social', name:'Social', icon:'🌐', queryTemplate:(d)=> buildQuery(d, 'perfis redes sociais, Instagram, Facebook, Twitter, TikTok, menções') }
+            {
+                id: 'civil',
+                name: 'Civil',
+                icon: '👤',
+                queryTemplate: (d) => buildQuery(d, 'registro civil certidão nascimento endereço residência família')
+            },
+            {
+                id: 'profissional',
+                name: 'Profissional',
+                icon: '💼',
+                queryTemplate: (d) => buildQuery(d, 'perfil profissional LinkedIn carreira emprego empresa cargo')
+            },
+            {
+                id: 'estudantil',
+                name: 'Estudantil',
+                icon: '🎓',
+                queryTemplate: (d) => buildQuery(d, 'histórico escolar universidade faculdade curso diploma formação acadêmica')
+            },
+            {
+                id: 'comercial',
+                name: 'Comercial',
+                icon: '🏪',
+                queryTemplate: (d) => buildQuery(d, 'CNPJ empresa sócio quadro societário sociedade empresarial negócio')
+            },
+            {
+                id: 'criminal',
+                name: 'Criminal',
+                icon: '🚨',
+                queryTemplate: (d) => buildQuery(d, 'antecedentes criminais preso notícia crime polícia delegacia')
+            },
+            {
+                id: 'juridica',
+                name: 'Jurídica',
+                icon: '⚖️',
+                queryTemplate: (d) => buildQuery(d, 'processo judicial ação cível TJ TJSP TJRJ TJMG réu autor advogado')
+            },
+            {
+                id: 'social',
+                name: 'Social',
+                icon: '🌐',
+                queryTemplate: (d) => buildQuery(d, 'perfil Instagram Facebook Twitter TikTok LinkedIn redes sociais menção')
+            }
         ];
         
         let currentSearchData = null;
@@ -335,11 +394,20 @@
             document.getElementById('search-btn').disabled=true;
             
             let completed=0;
-            const promises = AGENTS.map(async (agent)=>{
+            const promises = AGENTS.map(async (agent) => {
+                // A query contém apenas nome + contexto temático + localização.
+                // Os dados sensíveis (CPF, dataNasc, nomeMae) vão SOMENTE no campo filters.
                 const query = agent.queryTemplate(formData);
                 try {
                     const data = await callExaAPI(query, formData);
-                    resultsData[agent.id] = { agent, results: data.results || [], query, totalOriginalResults: data.originalCount || (data.results || []).length, filteredOut: data.filteredOut || 0 };
+                    resultsData[agent.id] = {
+                        agent,
+                        results: data.results || [],
+                        query,
+                        totalOriginalResults: data.originalCount || (data.results || []).length,
+                        filteredOut: data.filteredOut || 0,
+                        usedFallback: data.usedFallback || false,
+                    };
                 } catch(err) {
                     console.error(`Erro no agente ${agent.name}:`, err);
                     resultsData[agent.id] = { agent, results: [], error: err.message };
@@ -356,52 +424,86 @@
             showTab(1);
         }
         
+        // ==================== CHIPS DE SINAL ====================
+        // Exibe visualmente quais identificadores foram encontrados no resultado.
+        function buildSignalChips(matchedSignals, lowConfidence) {
+            if(!matchedSignals) return '';
+            const chips = [];
+            if(lowConfidence)           chips.push(`<span class="signal-chip chip-low">⚠ baixa conf.</span>`);
+            if(matchedSignals.cpf)      chips.push(`<span class="signal-chip chip-cpf">✓ CPF</span>`);
+            if(matchedSignals.nome)     chips.push(`<span class="signal-chip chip-nome">✓ Nome</span>`);
+            if(matchedSignals.dataNasc) chips.push(`<span class="signal-chip chip-data">✓ Data</span>`);
+            if(matchedSignals.nomeMae)  chips.push(`<span class="signal-chip chip-mae">✓ Mãe</span>`);
+            if(matchedSignals.localizacao) chips.push(`<span class="signal-chip chip-local">✓ Local</span>`);
+            return chips.join(' ');
+        }
+
         // ==================== RENDERIZAÇÃO DO DASHBOARD ====================
         function renderDashboard() {
             const grid=document.getElementById('agents-grid');
             grid.innerHTML='';
             document.getElementById('perfil-nome').innerHTML=`Perfil: <span class="text-cyan-400">${currentSearchData.nome}</span>`;
-            document.getElementById('perfil-info').innerHTML=`CPF: <span class="font-mono">${currentSearchData.cpf}</span> • Nasc: ${currentSearchData.dataNasc} • Mãe: ${currentSearchData.nomeMae} ${currentSearchData.localizacao ? ' • Local: '+currentSearchData.localizacao : ''}`;
-            AGENTS.forEach(agent=>{
-                const data=resultsData[agent.id]||{results:[],agent};
+            document.getElementById('perfil-info').innerHTML=`CPF: <span class="font-mono">${currentSearchData.cpf}</span> • Nasc: ${currentSearchData.dataNasc} • Mãe: ${currentSearchData.nomeMae}${currentSearchData.localizacao ? ' • Local: '+currentSearchData.localizacao : ''}`;
+
+            AGENTS.forEach(agent => {
+                const data = resultsData[agent.id] || { results: [], agent };
+                const validCount = (data.results || []).filter(r => !r.lowConfidence).length;
+                const fallbackCount = (data.results || []).filter(r => r.lowConfidence).length;
+
+                let subCaption = `Agente IA • ${data.results.length} resultado${data.results.length !== 1 ? 's' : ''}`;
+                if(typeof data.filteredOut === 'number' && data.filteredOut > 0)
+                    subCaption += ` • ${data.filteredOut} descartado${data.filteredOut !== 1 ? 's' : ''} por divergência`;
+                if(data.usedFallback && fallbackCount > 0)
+                    subCaption += ` • ${fallbackCount} com baixa confiança`;
+
                 let html=`
                 <div class="dashboard-card bg-zinc-900 border border-zinc-700 rounded-3xl overflow-hidden">
                     <div class="px-6 py-5 border-b border-zinc-700 flex items-center gap-x-4">
                         <div class="text-4xl">${agent.icon}</div>
-                        <div class="flex-1"><h3 class="font-semibold text-xl">${agent.name}</h3><p class="text-xs text-zinc-400">Agente IA • ${data.results.length} resultados válidos${typeof data.filteredOut === 'number' && data.filteredOut > 0 ? ` • ${data.filteredOut} descartados por divergência` : ''}</p></div>
-                        ${data.error?`<i class="fa-solid fa-circle-exclamation text-red-400" title="${data.error}"></i>`:''}
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-xl">${agent.name}</h3>
+                            <p class="text-xs text-zinc-400">${subCaption}</p>
+                        </div>
+                        ${data.error ? `<i class="fa-solid fa-circle-exclamation text-red-400" title="${data.error}"></i>` : ''}
                     </div>
                     <div class="p-6 max-h-80 overflow-y-auto space-y-5 text-sm">
                 `;
-                if(data.error) html+=`<p class="text-red-400 text-center py-6">⚠️ Erro: ${data.error}</p>`;
-                else if(data.results && data.results.length) {
-                    data.results.forEach(r=>{
-                        const highlight = (r.highlights&&r.highlights[0])?r.highlights[0].substring(0,160)+'...':'Sem destaque';
-                        html+=`
-                        <div class="result-item pl-4">
-                            <a href="${r.url}" target="_blank" class="hover:underline font-medium block break-words">${r.title}</a>
+
+                if(data.error) {
+                    html += `<p class="text-red-400 text-center py-6">⚠️ Erro: ${data.error}</p>`;
+                } else if(data.results && data.results.length) {
+                    data.results.forEach(r => {
+                        // Destaque: pega o primeiro highlight como string
+                        let highlight = 'Sem destaque disponível.';
+                        if(Array.isArray(r.highlights) && r.highlights.length > 0) {
+                            const h = r.highlights[0];
+                            highlight = (typeof h === 'string' ? h : (h.text || '')).substring(0, 180) + '…';
+                        }
+                        const chips = buildSignalChips(r.matchedSignals, r.lowConfidence);
+                        const borderClass = r.lowConfidence ? 'result-item low-confidence' : 'result-item';
+                        html += `
+                        <div class="${borderClass} pl-4">
+                            <a href="${r.url}" target="_blank" class="hover:underline font-medium block break-words">${r.title || r.url}</a>
                             <p class="text-xs text-zinc-400 mt-1 line-clamp-3">${highlight}</p>
-                            <div class="text-[10px] text-emerald-400 flex justify-between mt-2"><span>Score de aderência: ${r.matchScore ?? r.score ?? '—'}</span><span class="font-mono truncate">${r.url.split('//')[1]?.split('/')[0]||r.url}</span></div>
+                            <div class="flex flex-wrap items-center justify-between gap-y-1 mt-2">
+                                <div class="flex flex-wrap gap-1">${chips}</div>
+                                <div class="flex items-center gap-x-3 text-[10px] text-zinc-500">
+                                    <span class="text-emerald-400">Score: ${r.matchScore ?? '—'}</span>
+                                    <span class="font-mono truncate max-w-[120px]">${(r.url.split('//')[1]||r.url).split('/')[0]}</span>
+                                </div>
+                            </div>
                         </div>`;
                     });
-                } else html+=`<p class="text-zinc-400 italic text-center py-10">Nenhum resultado encontrado.</p>`;
-                html+=`</div></div>`;
-                grid.innerHTML+=html;
+                } else {
+                    html += `<p class="text-zinc-400 italic text-center py-10">Nenhum resultado encontrado para este agente.</p>`;
+                }
+
+                html += `</div></div>`;
+                grid.innerHTML += html;
             });
         }
         
-        // ==================== FUNÇÕES AUXILIARES ====================
-        function retrySearch() {
-            if(currentSearchData) {
-                document.getElementById('nome').value=currentSearchData.nome;
-                document.getElementById('cpf').value=currentSearchData.cpf;
-                document.getElementById('dataNasc').value=currentSearchData.dataNasc;
-                document.getElementById('nomeMae').value=currentSearchData.nomeMae;
-                document.getElementById('localizacao').value=currentSearchData.localizacao || '';
-                handleSearch(null);
-            } else alert('Nenhuma busca anterior encontrada.');
-        }
-        
+        // ==================== PDF ====================
         function buildReportContent() {
             if(!currentSearchData) return '<p class="text-red-500">Nenhuma busca realizada.</p>';
             const now=new Date();
@@ -423,8 +525,13 @@
                 let section=`<div class="break-inside-avoid mb-8"><div class="flex items-center gap-x-3 mb-4"><span class="text-4xl">${agent.icon}</span><div class="text-2xl font-semibold">${agent.name}</div></div>`;
                 if(data.results && data.results.length) {
                     data.results.forEach(r=>{
-                        const hl=r.highlights&&r.highlights[0]?r.highlights[0].substring(0,220)+'...':'';
-                        section+=`<div class="mb-6 border-l-4 border-cyan-400 pl-4"><div class="font-medium text-lg">${r.title}</div><a href="${r.url}" target="_blank" class="text-xs text-blue-600 break-all">${r.url}</a>${hl?`<p class="text-zinc-600 text-sm mt-2">${hl}</p>`:''}</div>`;
+                        let hl = '';
+                        if(Array.isArray(r.highlights) && r.highlights.length > 0) {
+                            const h = r.highlights[0];
+                            hl = (typeof h === 'string' ? h : (h.text || '')).substring(0, 220) + '…';
+                        }
+                        const lowWarn = r.lowConfidence ? '<span style="color:#f59e0b;font-size:10px;"> ⚠ baixa confiança</span>' : '';
+                        section+=`<div class="mb-6 border-l-4 border-cyan-400 pl-4"><div class="font-medium text-lg">${r.title || r.url}${lowWarn}</div><a href="${r.url}" target="_blank" class="text-xs text-blue-600 break-all">${r.url}</a>${hl?`<p class="text-zinc-600 text-sm mt-2">${hl}</p>`:''}</div>`;
                     });
                 } else section+=`<p class="text-zinc-400 italic">Nenhum dado encontrado nesta categoria.</p>`;
                 section+=`</div>`;
@@ -458,6 +565,7 @@
             html2pdf().set(opt).from(document.getElementById('pdf-report')).save();
         }
         
+        // ==================== NAVEGAÇÃO ====================
         function showTab(tabIndex) {
             document.querySelectorAll('.tab-link').forEach(el=>el.classList.remove('active','border-cyan-400'));
             document.getElementById('tab-'+tabIndex).classList.add('active','border-cyan-400');
@@ -466,76 +574,78 @@
             document.getElementById('tab-content-'+tabIndex).classList.remove('hidden');
         }
 
+        // ==================== UTILITÁRIOS ====================
         function clearFormFields() {
-            const ids = ['nome', 'cpf', 'dataNasc', 'nomeMae', 'localizacao'];
-            ids.forEach(id => {
-                const field = document.getElementById(id);
-                if (field) field.value = '';
+            ['nome','cpf','dataNasc','nomeMae','localizacao'].forEach(id=>{
+                const f=document.getElementById(id);
+                if(f) f.value='';
             });
         }
 
-        function resetApplicationState(options = {}) {
-            const { preserveFormData = false } = options;
-            currentSearchData = null;
-            resultsData = {};
-
-            if (!preserveFormData) {
-                const form = document.getElementById('search-form');
-                if (form) form.reset();
+        function resetApplicationState(options={}) {
+            const { preserveFormData=false } = options;
+            currentSearchData=null;
+            resultsData={};
+            if(!preserveFormData) {
+                const form=document.getElementById('search-form');
+                if(form) form.reset();
                 clearFormFields();
             }
-
-            const grid = document.getElementById('agents-grid');
-            const perfilNome = document.getElementById('perfil-nome');
-            const perfilInfo = document.getElementById('perfil-info');
-            const modal = document.getElementById('loading-modal');
-            const previewModal = document.getElementById('pdf-preview-modal');
-            const progressBar = document.getElementById('progress-bar');
-            const progressStatus = document.getElementById('progress-status');
-            const previewContent = document.getElementById('pdf-preview-content');
-            const searchBtn = document.getElementById('search-btn');
-
-            if (grid) grid.innerHTML = '';
-            if (perfilNome) perfilNome.textContent = 'Perfil de Investigação';
-            if (perfilInfo) perfilInfo.innerHTML = '';
-            if (modal) modal.classList.add('hidden');
-            if (previewModal) previewModal.classList.add('hidden');
-            if (previewContent) previewContent.innerHTML = '';
-            if (progressBar) progressBar.style.width = '0%';
-            if (progressStatus) progressStatus.innerText = '0 / 7 agentes concluídos';
-            if (searchBtn) searchBtn.disabled = false;
-
+            const els={
+                grid: document.getElementById('agents-grid'),
+                perfilNome: document.getElementById('perfil-nome'),
+                perfilInfo: document.getElementById('perfil-info'),
+                modal: document.getElementById('loading-modal'),
+                previewModal: document.getElementById('pdf-preview-modal'),
+                progressBar: document.getElementById('progress-bar'),
+                progressStatus: document.getElementById('progress-status'),
+                previewContent: document.getElementById('pdf-preview-content'),
+                searchBtn: document.getElementById('search-btn'),
+            };
+            if(els.grid) els.grid.innerHTML='';
+            if(els.perfilNome) els.perfilNome.textContent='Perfil de Investigação';
+            if(els.perfilInfo) els.perfilInfo.innerHTML='';
+            if(els.modal) els.modal.classList.add('hidden');
+            if(els.previewModal) els.previewModal.classList.add('hidden');
+            if(els.previewContent) els.previewContent.innerHTML='';
+            if(els.progressBar) els.progressBar.style.width='0%';
+            if(els.progressStatus) els.progressStatus.innerText='0 / 7 agentes concluídos';
+            if(els.searchBtn) els.searchBtn.disabled=false;
             showTab(0);
         }
         
-        function newSearch() {
-            resetApplicationState();
+        function retrySearch() {
+            if(currentSearchData) {
+                document.getElementById('nome').value=currentSearchData.nome;
+                document.getElementById('cpf').value=currentSearchData.cpf;
+                document.getElementById('dataNasc').value=currentSearchData.dataNasc;
+                document.getElementById('nomeMae').value=currentSearchData.nomeMae;
+                document.getElementById('localizacao').value=currentSearchData.localizacao||'';
+                handleSearch(null);
+            } else alert('Nenhuma busca anterior encontrada.');
         }
         
+        function newSearch() { resetApplicationState(); }
+        
         function logoutDemo() {
-            if (!confirm('Deseja finalizar esta sessão?')) return;
-
+            if(!confirm('Deseja finalizar esta sessão?')) return;
             resetApplicationState();
-
             try {
                 sessionStorage.clear();
                 localStorage.removeItem('exaosint:lastSearch');
-            } catch (error) {
+            } catch(error) {
                 console.warn('Não foi possível limpar o armazenamento local:', error);
             }
-
-            const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+            const cleanUrl=`${window.location.origin}${window.location.pathname}`;
             window.location.replace(cleanUrl);
         }
         
         window.onload=function() {
             resetApplicationState();
-            console.log('%c✅ ExaOSINT com backend seguro e filtros estritos ativo.','color:#00d4ff');
+            console.log('%c✅ ExaOSINT v2 — queries otimizadas, scoring multicamada, fallback inteligente.','color:#00d4ff');
         };
 
-        window.addEventListener('pageshow', function() {
-            resetApplicationState();
-        });
+        window.addEventListener('pageshow',function() { resetApplicationState(); });
     </script>
 </body>
 </html>
