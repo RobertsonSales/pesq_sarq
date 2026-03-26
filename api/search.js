@@ -1,4 +1,4 @@
-// api/search.js - VERSÃO CORRIGIDA
+// api/search.js
 const normalizeText = (value = '') =>
   value
     .toString()
@@ -22,7 +22,6 @@ const buildSearchableText = (result = {}) => {
   };
 };
 
-// CORREÇÃO: Scoring mais flexível para aceitar resultados parciais
 const scoreResult = (result, filters = {}) => {
   const searchable = buildSearchableText(result);
   const cpfDigits = onlyDigits(filters.cpf);
@@ -32,19 +31,11 @@ const scoreResult = (result, filters = {}) => {
   const fullName = normalizeText(filters.nome || '');
   const location = normalizeText(filters.localizacao || '');
 
-  // Extrai partes do nome para matching parcial
-  const nameParts = fullName.split(' ').filter(p => p.length > 2);
-  const motherParts = motherName.split(' ').filter(p => p.length > 2);
-
   const matches = {
     nome: fullName ? searchable.normalized.includes(fullName) : false,
-    nomeParcial: nameParts.length > 0 ? nameParts.some(part => searchable.normalized.includes(part)) : false,
     cpf: cpfDigits ? searchable.digits.includes(cpfDigits) : false,
-    cpfParcial: cpfDigits && cpfDigits.length >= 4 ? searchable.digits.includes(cpfDigits.slice(-4)) : false, // últimos 4 dígitos
-    dataNasc: birthDate ? (searchable.normalized.includes(birthDate) || searchable.normalized.includes(birthDate.replace(/\//g, '-'))) : false,
-    dataNascDigits: birthDateDigits ? searchable.digits.includes(birthDateDigits) : false,
+    dataNasc: birthDate ? (searchable.normalized.includes(birthDate) || (birthDateDigits ? searchable.digits.includes(birthDateDigits) : false)) : false,
     nomeMae: motherName ? searchable.normalized.includes(motherName) : false,
-    nomeMaeParcial: motherParts.length > 0 ? motherParts.some(part => searchable.normalized.includes(part)) : false,
     localizacao: false,
   };
 
@@ -53,26 +44,23 @@ const scoreResult = (result, filters = {}) => {
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean);
-    matches.localizacao = locationParts.length > 0 && locationParts.some((part) => searchable.normalized.includes(part));
+
+    matches.localizacao = locationParts.length > 0 && locationParts.every((part) => searchable.normalized.includes(part));
   }
 
   let score = 0;
-  if (matches.nome) score += 10;
-  else if (matches.nomeParcial) score += 5; // nome parcial ainda vale
-  
-  if (matches.cpf) score += 15;
-  else if (matches.cpfParcial) score += 3; // últimos dígitos do CPF
-  
-  if (matches.dataNasc || matches.dataNascDigits) score += 8;
-  if (matches.nomeMae) score += 12;
-  else if (matches.nomeMaeParcial) score += 4; // nome da mãe parcial
-  if (matches.localizacao) score += 3;
+  if (matches.nome) score += 4;
+  if (matches.cpf) score += 10;
+  if (matches.dataNasc) score += 5;
+  if (matches.nomeMae) score += 6;
+  if (matches.localizacao) score += 2;
 
-  // CRÍTICO: Aceitar se tiver nome + qualquer outra coisa, ou score >= 5
   const accepted = Boolean(
-    matches.nome || matches.nomeParcial || // aceita nome completo ou parcial
-    matches.cpf || matches.cpfParcial ||
-    score >= 5 // threshold mais baixo
+    matches.cpf ||
+      (matches.nome && matches.nomeMae) ||
+      (matches.nome && matches.dataNasc) ||
+      (matches.nome && matches.dataNasc && matches.localizacao) ||
+      score >= 10
   );
 
   return {
@@ -109,11 +97,11 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         query,
-        numResults: 15, // Aumentado de 12 para 15
-        useAutoprompt: true, // CORREÇÃO: Habilitar autoprompt para melhorar resultados
+        numResults: 12,
+        useAutoprompt: false,
         contents: {
-          highlights: { maxCharacters: 1200, numSentences: 3 }, // Aumentado
-          text: { maxCharacters: 1500 }, // Adicionado limite de texto
+          highlights: { maxCharacters: 900 },
+          text: true,
         },
         type: 'neural',
       }),
@@ -126,16 +114,6 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     const originalResults = Array.isArray(data.results) ? data.results : [];
-
-    // Se não houver filtros, retorna tudo
-    if (!filters.nome && !filters.cpf) {
-      return res.status(200).json({
-        ...data,
-        originalCount: originalResults.length,
-        filteredOut: 0,
-        results: originalResults,
-      });
-    }
 
     const filteredResults = originalResults
       .map((result) => {
@@ -150,16 +128,11 @@ export default async function handler(req, res) {
       .filter((result) => result.accepted)
       .sort((a, b) => b.matchScore - a.matchScore);
 
-    // Se filtros eliminaram tudo, retorna os top 5 originais com score baixo
-    const finalResults = filteredResults.length > 0 
-      ? filteredResults 
-      : originalResults.slice(0, 5).map(r => ({...r, matchScore: 1, accepted: true, fallback: true}));
-
     return res.status(200).json({
       ...data,
       originalCount: originalResults.length,
-      filteredOut: originalResults.length - finalResults.length,
-      results: finalResults,
+      filteredOut: Math.max(originalResults.length - filteredResults.length, 0),
+      results: filteredResults,
     });
   } catch (error) {
     console.error('Erro na função search:', error.message);
