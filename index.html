@@ -120,29 +120,29 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <!-- Formulário -->
                 <div class="bg-zinc-900 rounded-3xl p-6 sm:p-8 border border-zinc-800">
-                    <form id="search-form" onsubmit="handleSearch(event)">
+                    <form id="search-form" onsubmit="handleSearch(event)" autocomplete="off" novalidate>
                         <div class="space-y-6">
                             <div><label class="block text-sm font-medium text-zinc-400 mb-2">Nome Completo *</label>
-                                <input type="text" id="nome" class="w-full bg-zinc-800 border border-zinc-700 focus:border-cyan-400 rounded-2xl px-5 py-4 text-lg outline-none" placeholder="Ex: João Silva Santos" required>
+                                <input type="text" id="nome" autocomplete="off" spellcheck="false" class="w-full bg-zinc-800 border border-zinc-700 focus:border-cyan-400 rounded-2xl px-5 py-4 text-lg outline-none" placeholder="Ex: João Silva Santos" required>
                             </div>
                             <div><label class="block text-sm font-medium text-zinc-400 mb-2">CPF *</label>
-                                <input type="text" id="cpf" maxlength="14" oninput="maskCPF(this)" class="w-full bg-zinc-800 border border-zinc-700 focus:border-cyan-400 rounded-2xl px-5 py-4 text-lg outline-none font-mono" placeholder="000.000.000-00" required>
+                                <input type="text" id="cpf" autocomplete="off" inputmode="numeric" maxlength="14" oninput="maskCPF(this)" class="w-full bg-zinc-800 border border-zinc-700 focus:border-cyan-400 rounded-2xl px-5 py-4 text-lg outline-none font-mono" placeholder="000.000.000-00" required>
                             </div>
                             <div><label class="block text-sm font-medium text-zinc-400 mb-2">Data de Nascimento *</label>
-                                <input type="text" id="dataNasc" maxlength="10" oninput="maskDate(this)" class="w-full bg-zinc-800 border border-zinc-700 focus:border-cyan-400 rounded-2xl px-5 py-4 text-lg outline-none font-mono" placeholder="DD/MM/AAAA" required>
+                                <input type="text" id="dataNasc" autocomplete="off" inputmode="numeric" maxlength="10" oninput="maskDate(this)" class="w-full bg-zinc-800 border border-zinc-700 focus:border-cyan-400 rounded-2xl px-5 py-4 text-lg outline-none font-mono" placeholder="DD/MM/AAAA" required>
                             </div>
                             <div><label class="block text-sm font-medium text-zinc-400 mb-2">Nome da Mãe *</label>
-                                <input type="text" id="nomeMae" class="w-full bg-zinc-800 border border-zinc-700 focus:border-cyan-400 rounded-2xl px-5 py-4 text-lg outline-none" placeholder="Ex: Maria Oliveira Santos" required>
+                                <input type="text" id="nomeMae" autocomplete="off" spellcheck="false" class="w-full bg-zinc-800 border border-zinc-700 focus:border-cyan-400 rounded-2xl px-5 py-4 text-lg outline-none" placeholder="Ex: Maria Oliveira Santos" required>
                             </div>
                             <div><label class="block text-sm font-medium text-zinc-400 mb-2">Cidade / Estado (opcional)</label>
-                                <input type="text" id="localizacao" class="w-full bg-zinc-800 border border-zinc-700 focus:border-cyan-400 rounded-2xl px-5 py-4 text-lg outline-none" placeholder="Ex: São Paulo, SP">
+                                <input type="text" id="localizacao" autocomplete="off" spellcheck="false" class="w-full bg-zinc-800 border border-zinc-700 focus:border-cyan-400 rounded-2xl px-5 py-4 text-lg outline-none" placeholder="Ex: São Paulo, SP">
                                 <p class="text-xs text-zinc-500 mt-1">Ajuda a filtrar resultados por região.</p>
                             </div>
                             <div class="pt-4">
                                 <button type="submit" id="search-btn" class="w-full bg-gradient-to-r from-cyan-400 to-blue-500 hover:brightness-110 text-white font-semibold text-xl py-6 rounded-3xl flex items-center justify-center gap-x-3 shadow-lg shadow-cyan-500/30">
                                     <i class="fa-solid fa-rocket"></i> LANÇAR 7 AGENTES DE BUSCA
                                 </button>
-                                <p class="text-center text-xs text-zinc-500 mt-4">Consulta otimizada com aspas e autoprompt • Backend seguro</p>
+                                <p class="text-center text-xs text-zinc-500 mt-4">Consulta otimizada com aspas e filtros estritos • Backend seguro</p>
                             </div>
                         </div>
                     </form>
@@ -182,7 +182,7 @@
                         <i class="fa-solid fa-rotate-right"></i> Repetir Busca
                     </button>
                     <button onclick="newSearch()" class="px-8 py-4 border border-zinc-700 hover:border-zinc-400 rounded-3xl font-medium flex items-center gap-x-2">
-                        <i class="fa-solid fa-plus"></i> Nova Busca
+                        <i class="fa-solid fa-plus"></i> Nova Consulta
                     </button>
                 </div>
             </div>
@@ -258,12 +258,12 @@
         }
         
         // ==================== CHAMADA AO BACKEND ====================
-        async function callExaAPI(query) {
+        async function callExaAPI(query, filters) {
             try {
                 const response = await fetch('/api/search', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query }),
+                    body: JSON.stringify({ query, filters }),
                 });
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -285,13 +285,17 @@
         
         // ==================== CONSTRUÇÃO DA QUERY OTIMIZADA ====================
         function buildQuery(dados, contexto) {
-            let query = `"${dados.nome}" CPF "${dados.cpf}" data de nascimento ${dados.dataNasc}`;
-            if (dados.nomeMae) query += ` mãe "${dados.nomeMae}"`;
-            if (dados.localizacao && dados.localizacao.trim() !== '') {
-                query += ` localização ${dados.localizacao}`;
-            }
-            query += ` ${contexto}`;
-            return query;
+            const partes = [
+                `"${dados.nome}"`,
+                `"${dados.cpf}"`,
+                `"${dados.dataNasc}"`,
+                dados.nomeMae ? `"${dados.nomeMae}"` : '',
+                dados.localizacao ? `"${dados.localizacao}"` : '',
+                contexto,
+                'somente resultados do indivíduo exato',
+                'desconsiderar homônimos'
+            ].filter(Boolean);
+            return partes.join(' ');
         }
         
         // ==================== AGENTES ====================
@@ -334,8 +338,8 @@
             const promises = AGENTS.map(async (agent)=>{
                 const query = agent.queryTemplate(formData);
                 try {
-                    const data = await callExaAPI(query);
-                    resultsData[agent.id] = { agent, results: data.results || [], query };
+                    const data = await callExaAPI(query, formData);
+                    resultsData[agent.id] = { agent, results: data.results || [], query, totalOriginalResults: data.originalCount || (data.results || []).length, filteredOut: data.filteredOut || 0 };
                 } catch(err) {
                     console.error(`Erro no agente ${agent.name}:`, err);
                     resultsData[agent.id] = { agent, results: [], error: err.message };
@@ -364,7 +368,7 @@
                 <div class="dashboard-card bg-zinc-900 border border-zinc-700 rounded-3xl overflow-hidden">
                     <div class="px-6 py-5 border-b border-zinc-700 flex items-center gap-x-4">
                         <div class="text-4xl">${agent.icon}</div>
-                        <div class="flex-1"><h3 class="font-semibold text-xl">${agent.name}</h3><p class="text-xs text-zinc-400">Agente IA • ${data.results.length} resultados</p></div>
+                        <div class="flex-1"><h3 class="font-semibold text-xl">${agent.name}</h3><p class="text-xs text-zinc-400">Agente IA • ${data.results.length} resultados válidos${typeof data.filteredOut === 'number' && data.filteredOut > 0 ? ` • ${data.filteredOut} descartados por divergência` : ''}</p></div>
                         ${data.error?`<i class="fa-solid fa-circle-exclamation text-red-400" title="${data.error}"></i>`:''}
                     </div>
                     <div class="p-6 max-h-80 overflow-y-auto space-y-5 text-sm">
@@ -377,7 +381,7 @@
                         <div class="result-item pl-4">
                             <a href="${r.url}" target="_blank" class="hover:underline font-medium block break-words">${r.title}</a>
                             <p class="text-xs text-zinc-400 mt-1 line-clamp-3">${highlight}</p>
-                            <div class="text-[10px] text-emerald-400 flex justify-between mt-2"><span>Score: ${r.score||'—'}</span><span class="font-mono truncate">${r.url.split('//')[1]?.split('/')[0]||r.url}</span></div>
+                            <div class="text-[10px] text-emerald-400 flex justify-between mt-2"><span>Score de aderência: ${r.matchScore ?? r.score ?? '—'}</span><span class="font-mono truncate">${r.url.split('//')[1]?.split('/')[0]||r.url}</span></div>
                         </div>`;
                     });
                 } else html+=`<p class="text-zinc-400 italic text-center py-10">Nenhum resultado encontrado.</p>`;
@@ -461,19 +465,77 @@
             document.getElementById('tab-content-1').classList.add('hidden');
             document.getElementById('tab-content-'+tabIndex).classList.remove('hidden');
         }
-        
-        function newSearch() {
-            currentSearchData=null;
-            resultsData={};
-            document.getElementById('search-form').reset();
+
+        function clearFormFields() {
+            const ids = ['nome', 'cpf', 'dataNasc', 'nomeMae', 'localizacao'];
+            ids.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) field.value = '';
+            });
+        }
+
+        function resetApplicationState(options = {}) {
+            const { preserveFormData = false } = options;
+            currentSearchData = null;
+            resultsData = {};
+
+            if (!preserveFormData) {
+                const form = document.getElementById('search-form');
+                if (form) form.reset();
+                clearFormFields();
+            }
+
+            const grid = document.getElementById('agents-grid');
+            const perfilNome = document.getElementById('perfil-nome');
+            const perfilInfo = document.getElementById('perfil-info');
+            const modal = document.getElementById('loading-modal');
+            const previewModal = document.getElementById('pdf-preview-modal');
+            const progressBar = document.getElementById('progress-bar');
+            const progressStatus = document.getElementById('progress-status');
+            const previewContent = document.getElementById('pdf-preview-content');
+            const searchBtn = document.getElementById('search-btn');
+
+            if (grid) grid.innerHTML = '';
+            if (perfilNome) perfilNome.textContent = 'Perfil de Investigação';
+            if (perfilInfo) perfilInfo.innerHTML = '';
+            if (modal) modal.classList.add('hidden');
+            if (previewModal) previewModal.classList.add('hidden');
+            if (previewContent) previewContent.innerHTML = '';
+            if (progressBar) progressBar.style.width = '0%';
+            if (progressStatus) progressStatus.innerText = '0 / 7 agentes concluídos';
+            if (searchBtn) searchBtn.disabled = false;
+
             showTab(0);
         }
         
-        function logoutDemo() { if(confirm('Deseja finalizar esta sessão?')) window.location.reload(); }
+        function newSearch() {
+            resetApplicationState();
+        }
+        
+        function logoutDemo() {
+            if (!confirm('Deseja finalizar esta sessão?')) return;
+
+            resetApplicationState();
+
+            try {
+                sessionStorage.clear();
+                localStorage.removeItem('exaosint:lastSearch');
+            } catch (error) {
+                console.warn('Não foi possível limpar o armazenamento local:', error);
+            }
+
+            const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+            window.location.replace(cleanUrl);
+        }
         
         window.onload=function() {
-            console.log('%c✅ ExaOSINT com backend seguro e queries otimizadas ativo.','color:#00d4ff');
+            resetApplicationState();
+            console.log('%c✅ ExaOSINT com backend seguro e filtros estritos ativo.','color:#00d4ff');
         };
+
+        window.addEventListener('pageshow', function() {
+            resetApplicationState();
+        });
     </script>
 </body>
 </html>
