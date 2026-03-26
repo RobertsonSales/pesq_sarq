@@ -1,5 +1,5 @@
-// api/search.js — ExaOSINT v3 (VERSÃO RIGOROSA 2026)
-// Foco total em precisão: elimina homônimos exigindo nome + pelo menos 1 sinal forte
+// api/search.js — ExaOSINT v3.1 (Equilibrado - Março 2026)
+// Mantém proteção contra homônimos, mas permite resultados reais quando os dados existem na web
 
 const normalizeText = (value = '') =>
   value
@@ -25,10 +25,16 @@ const nameMatchResult = (searchableNormalized, fullName) => {
   if (tokens.length === 0) return { matched: false, strength: 'none' };
 
   const present = tokens.filter(t => searchableNormalized.includes(t));
+  const exactPhrase = searchableNormalized.includes(normalizeText(fullName));
 
-  if (present.length === tokens.length) return { matched: true, strength: 'strong' };
-  if (tokens.length >= 2 && searchableNormalized.includes(tokens[0]) && searchableNormalized.includes(tokens[tokens.length - 1]))
+  if (exactPhrase || present.length === tokens.length)
     return { matched: true, strength: 'strong' };
+
+  if (tokens.length >= 2 && 
+      searchableNormalized.includes(tokens[0]) && 
+      searchableNormalized.includes(tokens[tokens.length - 1]))
+    return { matched: true, strength: 'strong' };
+
   if (tokens.length >= 3 && present.length >= Math.ceil(tokens.length * 0.67))
     return { matched: true, strength: 'moderate' };
 
@@ -78,7 +84,11 @@ const dateMatchesText = (searchable, dataNasc) => {
   const mIdx = parseInt(rawMm, 10);
   if (mIdx >= 1 && mIdx <= 12) {
     const mes = MESES_PT[mIdx];
-    const extensos = [`${parseInt(rawDd)} de ${mes} de ${yyyy}`, `${parseInt(rawDd)} de ${mes} ${yyyy}`, `${parseInt(rawDd)} ${mes} ${yyyy}`];
+    const extensos = [
+      `${parseInt(rawDd)} de ${mes} de ${yyyy}`,
+      `${parseInt(rawDd)} de ${mes} ${yyyy}`,
+      `${parseInt(rawDd)} ${mes} ${yyyy}`
+    ];
     if (extensos.some(e => searchable.normalized.includes(normalizeText(e)))) return true;
   }
   return false;
@@ -99,8 +109,6 @@ const scoreResult = (result, filters = {}) => {
 
   const nomeResult = nameMatchResult(searchable.normalized, filters.nome || '');
   const nomeMatchStrong = nomeResult.strength === 'strong' || exactNamePhrase;
-  const nomeTokens = extractNameTokens(filters.nome || '');
-  const nomeIsSpecific = nomeTokens.length >= 3;
 
   const cpfMatch = cpfMatchesText(searchable, filters.cpf || '');
   const dateMatch = dateMatchesText(searchable, filters.dataNasc || '');
@@ -119,18 +127,18 @@ const scoreResult = (result, filters = {}) => {
   if (cpfMatch) score += 10;
   if (dateMatch) score += 5;
   if (motherMatch) score += 6;
-  if (locationMatch) score += 2;
-  if (exactNamePhrase) score += 3; // bônus forte
+  if (locationMatch) score += 3;        // aumentado um pouco
+  if (exactNamePhrase) score += 4;
 
-  const hasStrongSecondary = cpfMatch || dateMatch || motherMatch;
+  const hasStrongSignal = cpfMatch || motherMatch || (dateMatch && nomeMatchStrong);
 
-  // CRITÉRIO RIGOROSO: nome forte + pelo menos 1 sinal forte
+  // Critério principal (rígido mas realista)
   const accepted = Boolean(
-    cpfMatch ||
-    (nomeMatchStrong && hasStrongSecondary) ||
-    (nomeMatchStrong && motherMatch) ||
-    (nomeMatchStrong && dateMatch) ||
-    (nomeMatchStrong && locationMatch && nomeIsSpecific && nomeResult.strength === 'strong')
+    cpfMatch ||                                      // CPF sempre aceita
+    motherMatch ||                                   // Nome da mãe é muito discriminante
+    (nomeMatchStrong && dateMatch) ||                // Nome forte + data
+    (nomeMatchStrong && hasStrongSignal) ||          // Nome + qualquer sinal forte
+    (exactNamePhrase && (locationMatch || dateMatch)) // Frase exata + local ou data
   );
 
   const matches = {
@@ -183,16 +191,23 @@ export default async function handler(req, res) {
 
     const scored = originalResults.map(result => {
       const validation = scoreResult(result, filters);
-      return { ...result, matchScore: validation.score, matchedSignals: validation.matches, accepted: validation.accepted, lowConfidence: false };
+      return {
+        ...result,
+        matchScore: validation.score,
+        matchedSignals: validation.matches,
+        accepted: validation.accepted,
+        lowConfidence: false
+      };
     });
 
     const accepted = scored.filter(r => r.accepted).sort((a, b) => b.matchScore - a.matchScore);
 
+    // Fallback mais útil para casos como Frederico Sales Guimarães
     const finalResults = accepted.length > 0
       ? accepted
       : scored
-          .filter(r => r.matchScore >= 9) // fallback muito mais rigoroso
-          .slice(0, 3)
+          .filter(r => r.matchScore >= 7)   // Antes era 9 — agora mais flexível
+          .slice(0, 4)
           .map(r => ({ ...r, lowConfidence: true }));
 
     return res.status(200).json({
